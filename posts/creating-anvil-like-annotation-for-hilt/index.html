@@ -1,0 +1,164 @@
+<!doctype html><html lang=en><head><title>Creating Anvil-like annotation for Hilt using KSP · Bruno Hensel</title><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=color-scheme content="light dark"><meta name=author content="Bruno Hensel"><meta name=description content="This post assumes some familiarity with dependency injection using Dagger Hilt on Android.
+This blog post will address code generation to ease the process using @Binds annotation to create aliases to a particular type.
+Provide a type to the graph Link to heading When you are creating classes, usually only annotating them with @Inject will be enough to tell Dagger which constructor and fields should be used to create instances of classes."><meta name=keywords content><meta name=twitter:card content="summary"><meta name=twitter:title content="Creating Anvil-like annotation for Hilt using KSP"><meta name=twitter:description content="This post assumes some familiarity with dependency injection using Dagger Hilt on Android.
+This blog post will address code generation to ease the process using @Binds annotation to create aliases to a particular type.
+Provide a type to the graph Link to heading When you are creating classes, usually only annotating them with @Inject will be enough to tell Dagger which constructor and fields should be used to create instances of classes."><meta property="og:title" content="Creating Anvil-like annotation for Hilt using KSP"><meta property="og:description" content="This post assumes some familiarity with dependency injection using Dagger Hilt on Android.
+This blog post will address code generation to ease the process using @Binds annotation to create aliases to a particular type.
+Provide a type to the graph Link to heading When you are creating classes, usually only annotating them with @Inject will be enough to tell Dagger which constructor and fields should be used to create instances of classes."><meta property="og:type" content="article"><meta property="og:url" content="https://www.brunohensel.dev/posts/creating-anvil-like-annotation-for-hilt/"><meta property="article:section" content="posts"><meta property="article:published_time" content="2024-02-03T16:57:15+02:00"><meta property="article:modified_time" content="2024-02-03T16:57:15+02:00"><link rel=canonical href=https://www.brunohensel.dev/posts/creating-anvil-like-annotation-for-hilt/><link rel=preload href="/fonts/forkawesome-webfont.woff2?v=1.2.0" as=font type=font/woff2 crossorigin><link rel=stylesheet href=/css/coder.min.e1bdf152d93b060b06ba5d496486ed9c201a8b95d335e035beb5faebe3b61cad.css integrity="sha256-4b3xUtk7BgsGul1JZIbtnCAai5XTNeA1vrX66+O2HK0=" crossorigin=anonymous media=screen><link rel=stylesheet href=/css/coder-dark.min.a00e6364bacbc8266ad1cc81230774a1397198f8cfb7bcba29b7d6fcb54ce57f.css integrity="sha256-oA5jZLrLyCZq0cyBIwd0oTlxmPjPt7y6KbfW/LVM5X8=" crossorigin=anonymous media=screen><link rel=icon type=image/svg+xml href=/images/favicon.svg sizes=any><link rel=icon type=image/png href=/images/favicon-32x32.png sizes=32x32><link rel=icon type=image/png href=/images/favicon-16x16.png sizes=16x16><link rel=apple-touch-icon href=/images/apple-touch-icon.png><link rel=apple-touch-icon sizes=180x180 href=/images/apple-touch-icon.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/images/safari-pinned-tab.svg color=#5bbad5></head><body class="preload-transitions colorscheme-dark"><main class=wrapper><nav class=navigation><section class=container><a class=navigation-title href=/>Bruno Hensel</a>
+<input type=checkbox id=menu-toggle>
+<label class="menu-button float-right" for=menu-toggle><i class="fa fa-bars fa-fw" aria-hidden=true></i></label><ul class=navigation-list><li class=navigation-item><a class=navigation-link href=/about/>About</a></li><li class=navigation-item><a class=navigation-link href=/posts>Blog</a></li></ul></section></nav><div class=content><section class="container post"><article><header><div class=post-title><h1 class=title><a class=title-link href=https://www.brunohensel.dev/posts/creating-anvil-like-annotation-for-hilt/>Creating Anvil-like annotation for Hilt using KSP</a></h1></div><div class=post-meta><div class=date><span class=posted-on><i class="fa fa-calendar" aria-hidden=true></i>
+<time datetime=2024-02-03T16:57:15+02:00>Feb 3, 2024</time></span>
+<span class=reading-time><i class="fa fa-clock-o" aria-hidden=true></i>
+5-minute read</span></div></div></header><div class=post-content><p><em>This post assumes some familiarity with dependency injection using Dagger Hilt on Android.</em></p><p>This blog post will address code generation to ease the process using <code>@Binds</code> annotation to create aliases to a particular type.</p><h3 id=provide-a-type-to-the-graph>Provide a type to the graph
+<a class=heading-link href=#provide-a-type-to-the-graph><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h3><p>When you are creating classes, usually only annotating them with <code>@Inject</code> will be enough to tell Dagger which constructor and fields should be used to create instances of classes.</p><div class=highlight><pre tabindex=0 style=color:#c9d1d9;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-kotlin data-lang=kotlin><span style=display:flex><span><span style=color:#ff7b72>class</span> <span style=color:#f0883e;font-weight:700>LocalDataSource</span> <span style=color:#d2a8ff;font-weight:700>@Iject</span> <span style=color:#ff7b72>constructor</span>(db: Database) { <span style=color:#ff7b72;font-weight:700>..</span>. }
+</span></span></code></pre></div><p>Unfortunately, its usage is limited. This annotation alone cannot be relied upon when implementing an interface that will subsequently be injected into a constructor.</p><div class=highlight><pre tabindex=0 style=color:#c9d1d9;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-kotlin data-lang=kotlin><span style=display:flex><span><span style=color:#d2a8ff;font-weight:700>@Module</span>
+</span></span><span style=display:flex><span><span style=color:#d2a8ff;font-weight:700>@InstallIn</span>(SingletonComponent<span style=color:#ff7b72;font-weight:700>::</span><span style=color:#ff7b72>class</span>)
+</span></span><span style=display:flex><span><span style=color:#ff7b72>object</span> <span style=color:#f0883e;font-weight:700>DatabaseModule</span> {
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    <span style=color:#d2a8ff;font-weight:700>@Provides</span>
+</span></span><span style=display:flex><span>    <span style=color:#ff7b72>fun</span> <span style=color:#d2a8ff;font-weight:700>providesMyDatabase</span>(context: Context) : Database = MyDataBase(context)
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#8b949e;font-style:italic>// OR
+</span></span></span><span style=display:flex><span><span style=color:#8b949e;font-style:italic></span>
+</span></span><span style=display:flex><span><span style=color:#d2a8ff;font-weight:700>@Module</span>
+</span></span><span style=display:flex><span><span style=color:#d2a8ff;font-weight:700>@InstallIn</span>(SingletonComponent<span style=color:#ff7b72;font-weight:700>::</span><span style=color:#ff7b72>class</span>)
+</span></span><span style=display:flex><span><span style=color:#ff7b72>interface</span> <span style=color:#f0883e;font-weight:700>DatabaseModule</span> {
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    <span style=color:#d2a8ff;font-weight:700>@Binds</span>
+</span></span><span style=display:flex><span>    <span style=color:#ff7b72>fun</span> <span style=color:#d2a8ff;font-weight:700>bindsMyDataBase</span>(db: MyDataBase) : Database
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><p>You can read more about it in the <a href=https://dagger.dev/dev-guide/ class=external-link target=_blank rel=noopener>official documentation</a>.</p><p>With this short snippet, we can see that we need to create a <code>@Module</code> and provides a way for dagger to create an alias to the type - <code>Database</code> in the above example.</p><h4 id=anvil-simplifies-the-process-by-reducing-wiring-boilerplate>Anvil simplifies the process by reducing wiring boilerplate.
+<a class=heading-link href=#anvil-simplifies-the-process-by-reducing-wiring-boilerplate><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h4><p><a href=https://github.com/square/anvil class=external-link target=_blank rel=noopener>Anvil</a> is a kotlin compiler plugin that makes dependency injection with Dagger easier by generating a lot of boilerplate in our behalf. You can reach to its official documentation to learn more about it.</p><p>In this post, our focus will be on a specific annotation introduced by Anvil: <code>@ContributesBinding</code>. We&rsquo;ll explore how this annotation simplifies the process of binding interfaces to their implementations. This annotation replaces the need of creating a <code>@Module</code> by contributing the dependency directly to the <code>Compoent</code>.</p><h3 id=generating-a-module-for-hilt>Generating a module for Hilt
+<a class=heading-link href=#generating-a-module-for-hilt><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h3><p>The objective is to annotate the implementation of an interface, allowing the automatic generation of module and binding boilerplate. This facilitates the integration of the annotated class within the Dagger Hilt framework.</p><p>We need to create our annotation. We can put it inside a dedicated <a href=https://github.com/brunohensel/Hilt-Annotation/tree/main/annotation class=external-link target=_blank rel=noopener>module</a>.</p><div class=highlight><pre tabindex=0 style=color:#c9d1d9;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-kotlin data-lang=kotlin><span style=display:flex><span><span style=color:#d2a8ff;font-weight:700>@Retention</span>(<span style=color:#f0883e;font-weight:700>AnnotationRetention</span>.RUNTIME)
+</span></span><span style=display:flex><span><span style=color:#d2a8ff;font-weight:700>@Target</span>(<span style=color:#f0883e;font-weight:700>AnnotationTarget</span>.CLASS)
+</span></span><span style=display:flex><span><span style=color:#d2a8ff;font-weight:700>@GeneratesRootInput</span>
+</span></span><span style=display:flex><span><span style=color:#ff7b72>annotation</span> <span style=color:#ff7b72>class</span> <span style=color:#f0883e;font-weight:700>ContributesBinding</span>(<span style=color:#ff7b72>val</span> <span style=color:#79c0ff>component</span>: KClass&lt;*&gt;, <span style=color:#ff7b72>val</span> <span style=color:#79c0ff>boundType</span>: KClass&lt;*&gt; = Any<span style=color:#ff7b72;font-weight:700>::</span><span style=color:#ff7b72>class</span>)
+</span></span></code></pre></div><p><strong>Note:</strong> <a href=https://dagger.dev/api/latest/dagger/hilt/GeneratesRootInput.html class=external-link target=_blank rel=noopener>GeneratesRootInput</a> lets Hilt knows that it has to wait before creating the components.</p><p><em>Bound type</em> is useful in case your class implements more than one interface, and you need to tell which one needs to be provided.</p><p>Now we move onto creating our processor. For that, we need to add a dependency on <a href=https://kotlinlang.org/docs/ksp-overview.html class=external-link target=_blank rel=noopener>KSP</a> that will generate code for us. In the link you can go to the <code>Quickstart</code> to get more familiar with it and go through the setup.</p><p>To integrate into the Kotlin Symbol Processing - KSP, we need our class to implement the <code>SymbolProcessor</code>.</p><div class=highlight><pre tabindex=0 style=color:#c9d1d9;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-kotlin data-lang=kotlin><span style=display:flex><span><span style=color:#ff7b72>class</span> <span style=color:#f0883e;font-weight:700>BindingProcessor</span>(<span style=color:#ff7b72>private</span> <span style=color:#ff7b72>val</span> <span style=color:#79c0ff>codeGenerator</span>: CodeGenerator) : SymbolProcessor {
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    <span style=color:#ff7b72>override</span> <span style=color:#ff7b72>fun</span> <span style=color:#d2a8ff;font-weight:700>process</span>(resolver: Resolver): List&lt;KSAnnotated&gt; {
+</span></span><span style=display:flex><span>        <span style=color:#ff7b72>val</span> <span style=color:#79c0ff>symbols</span> = resolver.getSymbolsWithAnnotation(<span style=color:#f0883e;font-weight:700>Utils</span>.<span style=color:#f0883e;font-weight:700>CONTRIBUTES_BINDING</span>.canonicalName)
+</span></span><span style=display:flex><span>        <span style=color:#8b949e;font-style:italic>// creates a pair of valid and invalid list of symbols
+</span></span></span><span style=display:flex><span><span style=color:#8b949e;font-style:italic></span>        <span style=color:#ff7b72>val</span> <span style=color:#f85149>(</span><span style=color:#79c0ff>validSymbols</span>, invalidSymbols) = symbols.partition { <span style=color:#ff7b72>it</span>.validate() }
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        <span style=color:#ff7b72>for</span> (symbol <span style=color:#ff7b72>in</span> validSymbols) {
+</span></span><span style=display:flex><span>            <span style=color:#ff7b72>if</span> (symbol <span style=color:#ff7b72>is</span> KSClassDeclaration) {
+</span></span><span style=display:flex><span>                symbol.accept(
+</span></span><span style=display:flex><span>                    visitor = ContributeBindingVisitor(codeGenerator, logger),
+</span></span><span style=display:flex><span>                    <span style=color:#ff7b72>data</span> = Unit
+</span></span><span style=display:flex><span>                )
+</span></span><span style=display:flex><span>            }
+</span></span><span style=display:flex><span>        }
+</span></span><span style=display:flex><span>        <span style=color:#ff7b72>return</span> invalidSymbols <span style=color:#8b949e;font-style:italic>// symbols that the processor can&#39;t process.
+</span></span></span><span style=display:flex><span><span style=color:#8b949e;font-style:italic></span>    }
+</span></span><span style=display:flex><span>} 
+</span></span></code></pre></div><p>In the <code>process</code> method, we will get all the classes annotated with our annotation, and visit them to get the information about the <code>Component</code> where the binding has to be installed in, and the Super type being implemented by the annotated class. With that information we can create a new File and add our generated <code>@Module</code> in it.</p><p>As KSP processes occur in multiple rounds, our processor returns symbols it couldn&rsquo;t process. This ensures that other processors in the code can handle them during subsequent rounds of processing.
+The documentation of the <em>process</em> function explains that:</p><blockquote><p>Returns: A list of deferred symbols that the processor can&rsquo;t process. Only symbols that can&rsquo;t be processed at this round should be returned.</p></blockquote><p>The <code>ContributeBindingVisitor</code> class extends <code>KSVisitorVoid</code> class, and we use one of its methods to visit the annotated class declaration. Here we can validate the correctness and expectations of the code.</p><div class=highlight><pre tabindex=0 style=color:#c9d1d9;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-kotlin data-lang=kotlin><span style=display:flex><span><span style=color:#ff7b72>override</span> <span style=color:#ff7b72>fun</span> <span style=color:#d2a8ff;font-weight:700>visitClassDeclaration</span>(classDeclaration: KSClassDeclaration, <span style=color:#ff7b72>data</span>: Unit) {
+</span></span><span style=display:flex><span>    <span style=color:#ff7b72>val</span> <span style=color:#79c0ff>annotation</span> = getAnnotation(classDeclaration) <span style=color:#ff7b72;font-weight:700>?:</span> <span style=color:#ff7b72>return</span>
+</span></span><span style=display:flex><span>    <span style=color:#ff7b72>val</span> <span style=color:#79c0ff>component</span> = resolveType(<span style=color:#ff7b72>annotation</span>.arguments.component1().<span style=color:#ff7b72>value</span><span style=color:#ff7b72;font-weight:700>!!</span>)
+</span></span><span style=display:flex><span>    <span style=color:#ff7b72>val</span> <span style=color:#79c0ff>boundType</span> = <span style=color:#ff7b72>annotation</span>.arguments.component2()
+</span></span><span style=display:flex><span>    <span style=color:#ff7b72>val</span> <span style=color:#79c0ff>defaultArgument</span> = <span style=color:#ff7b72>annotation</span>.defaultArguments.component1()
+</span></span><span style=display:flex><span>    <span style=color:#ff7b72>val</span> <span style=color:#79c0ff>superTypes</span> = classDeclaration.superTypes
+</span></span><span style=display:flex><span>    <span style=color:#ff7b72>val</span> <span style=color:#79c0ff>superTypesCount</span> = superTypes.count()
+</span></span><span style=display:flex><span>    <span style=color:#ff7b72>val</span> <span style=color:#79c0ff>firstSuperType</span> = superTypes.firstOrNull()<span style=color:#ff7b72;font-weight:700>?.</span>resolve()
+</span></span><span style=display:flex><span>        <span style=color:#ff7b72;font-weight:700>?:</span> <span style=color:#ff7b72>throw</span> IllegalStateException(
+</span></span><span style=display:flex><span>            <span style=color:#a5d6ff>&#34;A class annotated with @ContributesBinding should implement at least one interface&#34;</span>
+</span></span><span style=display:flex><span>        )
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#ff7b72>if</span> (superTypesCount &gt; <span style=color:#a5d6ff>1</span> <span style=color:#ff7b72;font-weight:700>&amp;&amp;</span> boundType <span style=color:#ff7b72;font-weight:700>==</span> defaultArgument) {
+</span></span><span style=display:flex><span>        <span style=color:#8b949e;font-style:italic>// we could throw an exception here as well
+</span></span></span><span style=display:flex><span><span style=color:#8b949e;font-style:italic></span>        logger.exception(
+</span></span><span style=display:flex><span>            IllegalArgumentException(
+</span></span><span style=display:flex><span>                <span style=color:#a5d6ff>&#34;There are more than one super type declared without any bounded type declaration &#34;</span>
+</span></span><span style=display:flex><span>            )
+</span></span><span style=display:flex><span>        )
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#ff7b72>val</span> <span style=color:#79c0ff>boundTypeArg</span> = <span style=color:#ff7b72>if</span> (superTypesCount &gt; <span style=color:#a5d6ff>1</span>) {
+</span></span><span style=display:flex><span>        BoundType(typeArg = resolveType(boundType.<span style=color:#ff7b72>value</span><span style=color:#ff7b72;font-weight:700>!!</span>), typeName = <span style=color:#ff7b72>null</span>)
+</span></span><span style=display:flex><span>    } <span style=color:#ff7b72>else</span> BoundType(typeName = firstSuperType.toClassName(), typeArg = <span style=color:#ff7b72>null</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#ff7b72>val</span> <span style=color:#79c0ff>fileSpec</span>: FileSpec = bindingFileSpec(
+</span></span><span style=display:flex><span>        subtype = classDeclaration.asType(listOf()),
+</span></span><span style=display:flex><span>        componentArg = component,
+</span></span><span style=display:flex><span>        boundTypeArg = boundTypeArg,
+</span></span><span style=display:flex><span>        logger = logger,
+</span></span><span style=display:flex><span>    )
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    fileSpec.writeTo(codeGenerator = codeGenerator, aggregating = <span style=color:#ff7b72>false</span>)
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><p>Leveraging <a href=https://github.com/square/kotlinpoet class=external-link target=_blank rel=noopener>Kotlinpoet</a>, we can effortlessly generate Kotlin code. This is done by the function <code>bindingFileSpec</code>.</p><div class=highlight><pre tabindex=0 style=color:#c9d1d9;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-kotlin data-lang=kotlin><span style=display:flex><span><span style=color:#ff7b72>internal</span> <span style=color:#ff7b72>fun</span> <span style=color:#d2a8ff;font-weight:700>bindingFileSpec</span>(
+</span></span><span style=display:flex><span>    subtype: KSType,
+</span></span><span style=display:flex><span>    componentArg: Any,
+</span></span><span style=display:flex><span>    boundTypeArg: BoundType,
+</span></span><span style=display:flex><span>): FileSpec {
+</span></span><span style=display:flex><span>    <span style=color:#ff7b72>val</span> <span style=color:#79c0ff>subtypeClassName</span> = subtype.toClassName().topLevelClassName()
+</span></span><span style=display:flex><span>    <span style=color:#ff7b72>val</span> <span style=color:#79c0ff>moduleName</span> = ClassName(
+</span></span><span style=display:flex><span>        packageName = subtypeClassName.packageName,
+</span></span><span style=display:flex><span>        <span style=color:#a5d6ff>&#34;</span><span style=color:#a5d6ff>${subtypeClassName.simpleNames.joinToString(&#34;_&#34;)}</span><span style=color:#a5d6ff>_HiltBindingModule&#34;</span>
+</span></span><span style=display:flex><span>    )
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#ff7b72>val</span> <span style=color:#f85149>(</span><span style=color:#79c0ff>boundType</span>, typeName) = boundTypeArg
+</span></span><span style=display:flex><span>    <span style=color:#ff7b72>val</span> <span style=color:#79c0ff>bindName</span> = boundType<span style=color:#ff7b72;font-weight:700>?.</span>javaClass<span style=color:#ff7b72;font-weight:700>?.</span>simpleName <span style=color:#ff7b72;font-weight:700>?:</span> <span style=color:#ff7b72>when</span> (typeName) {
+</span></span><span style=display:flex><span>        <span style=color:#ff7b72>is</span> ClassName <span style=color:#ff7b72;font-weight:700>-&gt;</span> typeName.simpleName
+</span></span><span style=display:flex><span>        <span style=color:#ff7b72>else</span> <span style=color:#ff7b72;font-weight:700>-&gt;</span> error(<span style=color:#a5d6ff>&#34;Bound type is not a class&#34;</span>)
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#8b949e;font-style:italic>// This will create the @Module interface with @InstallIn and @OriginatingElement annotations
+</span></span></span><span style=display:flex><span><span style=color:#8b949e;font-style:italic></span>    <span style=color:#ff7b72>val</span> <span style=color:#79c0ff>hiltModuleSpec</span> = <span style=color:#f0883e;font-weight:700>TypeSpec</span>.interfaceBuilder(moduleName)
+</span></span><span style=display:flex><span>        .addAnnotation(<span style=color:#f0883e;font-weight:700>Utils</span>.DAGGER_MODULE)
+</span></span><span style=display:flex><span>        .addAnnotation(
+</span></span><span style=display:flex><span>            <span style=color:#f0883e;font-weight:700>AnnotationSpec</span>.builder(<span style=color:#f0883e;font-weight:700>Utils</span>.INSTALL_IN)
+</span></span><span style=display:flex><span>                .addMember(<span style=color:#a5d6ff>&#34;%T::class&#34;</span>, componentArg)
+</span></span><span style=display:flex><span>                .build()
+</span></span><span style=display:flex><span>        )
+</span></span><span style=display:flex><span>        .addAnnotation(
+</span></span><span style=display:flex><span>            <span style=color:#f0883e;font-weight:700>AnnotationSpec</span>.builder(<span style=color:#f0883e;font-weight:700>Utils</span>.ORIGINATING_ELEMENT)
+</span></span><span style=display:flex><span>                .addMember(<span style=color:#a5d6ff>&#34;topLevelClass = %T::class&#34;</span>, subtypeClassName)
+</span></span><span style=display:flex><span>                .build()
+</span></span><span style=display:flex><span>        )
+</span></span><span style=display:flex><span>        <span style=color:#8b949e;font-style:italic>// this will create the @Binds fun bind(impl: TypeImpl): Type
+</span></span></span><span style=display:flex><span><span style=color:#8b949e;font-style:italic></span>        .addModifiers(<span style=color:#f0883e;font-weight:700>KModifier</span>.PUBLIC)
+</span></span><span style=display:flex><span>        .addFunction(
+</span></span><span style=display:flex><span>            <span style=color:#f0883e;font-weight:700>FunSpec</span>.builder(<span style=color:#a5d6ff>&#34;bind</span><span style=color:#a5d6ff>$bindName</span><span style=color:#a5d6ff>&#34;</span>)
+</span></span><span style=display:flex><span>                .addAnnotation(<span style=color:#f0883e;font-weight:700>Utils</span>.DAGGER_BINDS)
+</span></span><span style=display:flex><span>                .addModifiers(<span style=color:#f0883e;font-weight:700>KModifier</span>.PUBLIC, <span style=color:#f0883e;font-weight:700>KModifier</span>.ABSTRACT)
+</span></span><span style=display:flex><span>                .applyReturn(boundType, typeName)
+</span></span><span style=display:flex><span>                .addParameter(<span style=color:#a5d6ff>&#34;impl&#34;</span>, subtype.toTypeName())
+</span></span><span style=display:flex><span>                .build()
+</span></span><span style=display:flex><span>        )
+</span></span><span style=display:flex><span>        .build()
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    <span style=color:#ff7b72>return</span> <span style=color:#f0883e;font-weight:700>FileSpec</span>.builder(moduleName).addType(hiltModuleSpec).build()
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><p><a href=https://dagger.dev/api/latest/dagger/hilt/codegen/OriginatingElement.html class=external-link target=_blank rel=noopener>OriginatingElement</a> is needed because we are generating Hilt modules.</p><p>Now, we can use the annotation and let KSP generate the necessary Dagger Hilt boilerplate code for our specific use case. No need to manually creates a <code>@Module</code> or have to add a bind function inside of one.</p><div class=highlight><pre tabindex=0 style=color:#c9d1d9;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-kotlin data-lang=kotlin><span style=display:flex><span><span style=color:#ff7b72>interface</span> <span style=color:#f0883e;font-weight:700>Test</span> {
+</span></span><span style=display:flex><span>    <span style=color:#ff7b72>fun</span> <span style=color:#d2a8ff;font-weight:700>greeting</span>(): String
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#d2a8ff;font-weight:700>@ContributesBinding</span>(component = ActivityComponent<span style=color:#ff7b72;font-weight:700>::</span><span style=color:#ff7b72>class</span>)
+</span></span><span style=display:flex><span><span style=color:#ff7b72>class</span> <span style=color:#f0883e;font-weight:700>AnnotationTest</span> <span style=color:#d2a8ff;font-weight:700>@Inject</span> <span style=color:#ff7b72>constructor</span>() : Test {
+</span></span><span style=display:flex><span>    <span style=color:#ff7b72>override</span> <span style=color:#ff7b72>fun</span> <span style=color:#d2a8ff;font-weight:700>greeting</span>(): String {
+</span></span><span style=display:flex><span>        <span style=color:#ff7b72>return</span> <span style=color:#a5d6ff>&#34;KSP&#34;</span>
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#8b949e;font-style:italic>//The code generated will be like this
+</span></span></span><span style=display:flex><span><span style=color:#8b949e;font-style:italic></span>
+</span></span><span style=display:flex><span><span style=color:#d2a8ff;font-weight:700>@Module</span>
+</span></span><span style=display:flex><span><span style=color:#d2a8ff;font-weight:700>@InstallIn</span>(ActivityComponent<span style=color:#ff7b72;font-weight:700>::</span><span style=color:#ff7b72>class</span>)
+</span></span><span style=display:flex><span><span style=color:#d2a8ff;font-weight:700>@OriginatingElement</span>(topLevelClass = AnnotationTest<span style=color:#ff7b72;font-weight:700>::</span><span style=color:#ff7b72>class</span>)
+</span></span><span style=display:flex><span><span style=color:#ff7b72>public</span> <span style=color:#ff7b72>interface</span> <span style=color:#f0883e;font-weight:700>AnnotationTest</span>_HiltBindingModule {
+</span></span><span style=display:flex><span>    <span style=color:#d2a8ff;font-weight:700>@Binds</span>
+</span></span><span style=display:flex><span>    <span style=color:#ff7b72>public</span> <span style=color:#ff7b72>fun</span> <span style=color:#d2a8ff;font-weight:700>bindTest</span>(`impl`: AnnotationTest): Test
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><p>In conclusion, it&rsquo;s important to note that this post serves as a summary of my personal exploration with KSP. The code provided is experimental in nature and does not prioritize production-level considerations, such as performance optimization. It was crafted primarily to explore possibilities and demonstrate concepts.
+The working project can be found in this <a href=https://github.com/brunohensel/Hilt-Annotation class=external-link target=_blank rel=noopener>repository</a>.</p></div><footer></footer></article></section></div><footer class=footer><section class=container>©
+2024
+Bruno Hensel
+·
+Powered by <a href=https://gohugo.io/ target=_blank rel=noopener>Hugo</a> & <a href=https://github.com/luizdepra/hugo-coder/ target=_blank rel=noopener>Coder</a>.</section></footer></main><script src=/js/coder.min.6ae284be93d2d19dad1f02b0039508d9aab3180a12a06dcc71b0b0ef7825a317.js integrity="sha256-auKEvpPS0Z2tHwKwA5UI2aqzGAoSoG3McbCw73gloxc="></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-ED4JJJVD8G"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag("js",new Date),gtag("config","G-ED4JJJVD8G")</script></body></html>
