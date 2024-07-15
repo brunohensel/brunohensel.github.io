@@ -1,0 +1,184 @@
+<!doctype html><html lang=en><head><title>Don't let Layout duplication break your App · Bruno Hensel</title><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=color-scheme content="light dark"><meta name=author content="Bruno Hensel"><meta name=description content="How View Binding can help Link to heading View binding is a great feature that simplifies interacting with views in your Android app. It generates binding classes that directly reference views with IDs in your layouts. In simpler terms, it replaces the need for findViewById to create a reference to a view by ID.
+The usage is simple, you create a layout example_layout.xml, and a corresponding binding class, ExampleLayoutBinding, will be automatically generated, with which you can access your layout nodes using syntax like yourBinding."><meta name=keywords content><meta name=twitter:card content="summary"><meta name=twitter:title content="Don't let Layout duplication break your App"><meta name=twitter:description content="How View Binding can help Link to heading View binding is a great feature that simplifies interacting with views in your Android app. It generates binding classes that directly reference views with IDs in your layouts. In simpler terms, it replaces the need for findViewById to create a reference to a view by ID.
+The usage is simple, you create a layout example_layout.xml, and a corresponding binding class, ExampleLayoutBinding, will be automatically generated, with which you can access your layout nodes using syntax like yourBinding."><meta property="og:title" content="Don't let Layout duplication break your App"><meta property="og:description" content="How View Binding can help Link to heading View binding is a great feature that simplifies interacting with views in your Android app. It generates binding classes that directly reference views with IDs in your layouts. In simpler terms, it replaces the need for findViewById to create a reference to a view by ID.
+The usage is simple, you create a layout example_layout.xml, and a corresponding binding class, ExampleLayoutBinding, will be automatically generated, with which you can access your layout nodes using syntax like yourBinding."><meta property="og:type" content="article"><meta property="og:url" content="https://www.brunohensel.dev/posts/do-not-let-layout-dupe-break-your-app/"><meta property="article:section" content="posts"><meta property="article:published_time" content="2024-07-13T08:07:15+02:00"><meta property="article:modified_time" content="2024-07-13T08:07:15+02:00"><link rel=canonical href=https://www.brunohensel.dev/posts/do-not-let-layout-dupe-break-your-app/><link rel=preload href="/fonts/forkawesome-webfont.woff2?v=1.2.0" as=font type=font/woff2 crossorigin><link rel=stylesheet href=/css/coder.min.e1bdf152d93b060b06ba5d496486ed9c201a8b95d335e035beb5faebe3b61cad.css integrity="sha256-4b3xUtk7BgsGul1JZIbtnCAai5XTNeA1vrX66+O2HK0=" crossorigin=anonymous media=screen><link rel=stylesheet href=/css/coder-dark.min.a00e6364bacbc8266ad1cc81230774a1397198f8cfb7bcba29b7d6fcb54ce57f.css integrity="sha256-oA5jZLrLyCZq0cyBIwd0oTlxmPjPt7y6KbfW/LVM5X8=" crossorigin=anonymous media=screen><link rel=icon type=image/svg+xml href=/images/favicon.svg sizes=any><link rel=icon type=image/png href=/images/favicon-32x32.png sizes=32x32><link rel=icon type=image/png href=/images/favicon-16x16.png sizes=16x16><link rel=apple-touch-icon href=/images/apple-touch-icon.png><link rel=apple-touch-icon sizes=180x180 href=/images/apple-touch-icon.png><link rel=manifest href=/site.webmanifest><link rel=mask-icon href=/images/safari-pinned-tab.svg color=#5bbad5></head><body class="preload-transitions colorscheme-dark"><main class=wrapper><nav class=navigation><section class=container><a class=navigation-title href=/>Bruno Hensel</a>
+<input type=checkbox id=menu-toggle>
+<label class="menu-button float-right" for=menu-toggle><i class="fa fa-bars fa-fw" aria-hidden=true></i></label><ul class=navigation-list><li class=navigation-item><a class=navigation-link href=/about/>About</a></li><li class=navigation-item><a class=navigation-link href=/posts>Blog</a></li></ul></section></nav><div class=content><section class="container post"><article><header><div class=post-title><h1 class=title><a class=title-link href=https://www.brunohensel.dev/posts/do-not-let-layout-dupe-break-your-app/>Don't let Layout duplication break your App</a></h1></div><div class=post-meta><div class=date><span class=posted-on><i class="fa fa-calendar" aria-hidden=true></i>
+<time datetime=2024-07-13T08:07:15+02:00>Jul 13, 2024</time></span>
+<span class=reading-time><i class="fa fa-clock-o" aria-hidden=true></i>
+8-minute read</span></div></div></header><div class=post-content><h6 id=how-view-binding-can-help>How View Binding can help
+<a class=heading-link href=#how-view-binding-can-help><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h6><p>View binding is a great feature that simplifies interacting with views in your Android app.
+It generates binding classes that directly reference views with IDs in your layouts.
+In simpler terms, it replaces the need for <code>findViewById</code> to create a reference to a view by ID.</p><p>The usage is simple, you create a layout <code>example_layout.xml</code>, and a corresponding binding class, <code>ExampleLayoutBinding</code>,
+will be automatically generated, with which you can access your layout nodes using syntax like <code>yourBinding.xYz</code>. You can get more information in
+the <a href=https://developer.android.com/topic/libraries/view-binding class=external-link target=_blank rel=noopener>official docs</a>.</p><p>However, what if you need the same components present in one layout to be rearranged or regrouped for an Ab test. Depending
+on the complexity of you layout, managing all placements programmatically at runtime can be challenging. The
+fastest way to do it could be duplicating the layout and use the same binding as before.</p><p>While duplicating the layout might appear convenient, and your Fragment might not require changes, it introduces the risk of runtime exceptions. You can minimize this risk by writing tests.</p><h3 id=understanding-view-binding-generated-class>Understanding View Binding generated class
+<a class=heading-link href=#understanding-view-binding-generated-class><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h3><p>As an example, consider this layout <code>example_layout</code>:</p><div class=highlight><pre tabindex=0 style=color:#c9d1d9;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-html data-lang=html><span style=display:flex><span>
+</span></span><span style=display:flex><span>&lt;<span style=color:#7ee787>LinearLayout</span> <span style=color:#f85149>...</span>&gt;
+</span></span><span style=display:flex><span>    &lt;<span style=color:#7ee787>TextView</span> android:id<span style=color:#ff7b72;font-weight:700>=</span><span style=color:#a5d6ff>&#34;@+id/myText&#34;</span> <span style=color:#f85149>...</span>/&gt;
+</span></span><span style=display:flex><span>    &lt;<span style=color:#7ee787>Button</span> android:id<span style=color:#ff7b72;font-weight:700>=</span><span style=color:#a5d6ff>&#34;@+id/myButton&#34;</span> <span style=color:#f85149>...</span>/&gt;
+</span></span><span style=display:flex><span>    &lt;<span style=color:#7ee787>LinearLayout</span> <span style=color:#f85149>...</span>&gt;
+</span></span><span style=display:flex><span>        &lt;<span style=color:#7ee787>TextView</span> android:id<span style=color:#ff7b72;font-weight:700>=</span><span style=color:#a5d6ff>&#34;@+id/nestedText&#34;</span> <span style=color:#f85149>...</span>/&gt;
+</span></span><span style=display:flex><span>        &lt;<span style=color:#7ee787>Button</span> android:id<span style=color:#ff7b72;font-weight:700>=</span><span style=color:#a5d6ff>&#34;@+id/nestedButton&#34;</span> <span style=color:#f85149>...</span>/&gt;
+</span></span><span style=display:flex><span>    &lt;/<span style=color:#7ee787>LinearLayout</span>&gt;
+</span></span><span style=display:flex><span>&lt;/<span style=color:#7ee787>LinearLayout</span>&gt;
+</span></span></code></pre></div><p>A binding class will be generated specifically for your layout, named <code>ExampleLayoutBinding</code> (notice it matches the layout name with &ldquo;Binding&rdquo; appended).
+This class provides convenient access to your views through public fields:</p><ul><li><code>rootView: LinearLayout</code></li><li><code>myButton: Button</code></li><li><code>myText: TextView</code></li><li><code>nestedButton: Button</code></li><li><code>nestedText: TextView</code></li></ul><p>Note that each field corresponds to a view in the layout that has an ID.</p><p>The generated class also provides a <code>bind</code> method, which is responsible to find a View based on an ID and initialize the
+corresponding field. If the ID is not found, a <code>NullPointerException</code> is thrown.</p><p>Just a sneak peek:</p><div class=highlight><pre tabindex=0 style=color:#c9d1d9;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-java data-lang=java><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#d2a8ff;font-weight:700>@NonNull</span>
+</span></span><span style=display:flex><span><span style=color:#ff7b72>public</span> <span style=color:#ff7b72>static</span> ExampleLayoutBinding <span style=color:#d2a8ff;font-weight:700>bind</span><span style=color:#ff7b72;font-weight:700>(</span><span style=color:#d2a8ff;font-weight:700>@NonNull</span> View rootView<span style=color:#ff7b72;font-weight:700>)</span> <span style=color:#ff7b72;font-weight:700>{</span>
+</span></span><span style=display:flex><span>  <span style=color:#8b949e;font-style:italic>// The body of this method is generated in a way you would not otherwise write.
+</span></span></span><span style=display:flex><span><span style=color:#8b949e;font-style:italic></span>  <span style=color:#8b949e;font-style:italic>// This is done to optimize the compiled bytecode for size and performance.
+</span></span></span><span style=display:flex><span><span style=color:#8b949e;font-style:italic></span>  <span style=color:#ff7b72>int</span> id<span style=color:#ff7b72;font-weight:700>;</span>
+</span></span><span style=display:flex><span>  missingId<span style=color:#ff7b72;font-weight:700>:</span>
+</span></span><span style=display:flex><span>  <span style=color:#ff7b72;font-weight:700>{</span>
+</span></span><span style=display:flex><span>    id <span style=color:#ff7b72;font-weight:700>=</span> R<span style=color:#ff7b72;font-weight:700>.</span>id<span style=color:#ff7b72;font-weight:700>.</span>myButton<span style=color:#ff7b72;font-weight:700>;</span>
+</span></span><span style=display:flex><span>    Button myButton <span style=color:#ff7b72;font-weight:700>=</span> ViewBindings<span style=color:#ff7b72;font-weight:700>.</span>findChildViewById<span style=color:#ff7b72;font-weight:700>(</span>rootView<span style=color:#ff7b72;font-weight:700>,</span> id<span style=color:#ff7b72;font-weight:700>);</span>
+</span></span><span style=display:flex><span>    <span style=color:#ff7b72>if</span> <span style=color:#ff7b72;font-weight:700>(</span>myButton <span style=color:#ff7b72;font-weight:700>==</span> <span style=color:#79c0ff>null</span><span style=color:#ff7b72;font-weight:700>)</span> <span style=color:#ff7b72;font-weight:700>{</span>
+</span></span><span style=display:flex><span>      <span style=color:#ff7b72>break</span> missingId<span style=color:#ff7b72;font-weight:700>;</span>
+</span></span><span style=display:flex><span>    <span style=color:#ff7b72;font-weight:700>}</span>
+</span></span><span style=display:flex><span>    <span style=color:#ff7b72;font-weight:700>...</span>
+</span></span><span style=display:flex><span>  <span style=color:#ff7b72;font-weight:700>}</span>
+</span></span><span style=display:flex><span>  String missingId <span style=color:#ff7b72;font-weight:700>=</span> rootView<span style=color:#ff7b72;font-weight:700>.</span>getResources<span style=color:#ff7b72;font-weight:700>().</span>getResourceName<span style=color:#ff7b72;font-weight:700>(</span>id<span style=color:#ff7b72;font-weight:700>);</span>
+</span></span><span style=display:flex><span>  <span style=color:#ff7b72>throw</span> <span style=color:#ff7b72>new</span> NullPointerException<span style=color:#ff7b72;font-weight:700>(</span><span style=color:#a5d6ff>&#34;Missing required view with ID: &#34;</span><span style=color:#ff7b72;font-weight:700>.</span>concat<span style=color:#ff7b72;font-weight:700>(</span>missingId<span style=color:#ff7b72;font-weight:700>));</span>
+</span></span><span style=display:flex><span><span style=color:#ff7b72;font-weight:700>}</span>
+</span></span></code></pre></div><p>The documentation states</p><blockquote><p>If the layout is already inflated, you can instead call the binding class&rsquo;s static bind() method.</p></blockquote><p>Imagine you have a Fragment that can display different layouts based on certain conditions. However, these layouts might
+share the <em>same</em> structure with identical view IDs. In such a case, you can create a single <code>ExampleLayoutBinding</code> instance
+and use its <code>bind</code> method to link it with the inflated view, regardless of the specific layout source.</p><h3 id=catching-layout-inconsistencies>Catching Layout Inconsistencies
+<a class=heading-link href=#catching-layout-inconsistencies><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h3><div class="notice note"><div class=notice-title><i class="fa fa-sticky-note" aria-hidden=true></i>Note</div><div class=notice-content>We&rsquo;ll focus on writing an integration test without using an emulator or real device.</div></div><p>As mentioned before, having different layout sources to be inflated and only one binding class to be used in a Fragment
+introduces the risk of inconsistencies between the original and copied layouts. These inconsistencies, like mismatched IDs or view types, can lead to runtime exceptions that crash your app.
+We&rsquo;ll discuss how to catch these issues before they affect users.</p><h4 id=challenge-maintaining-layout-consistency>Challenge: Maintaining Layout Consistency
+<a class=heading-link href=#challenge-maintaining-layout-consistency><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h4><p>The challenge lies in ensuring that any changes made to the original layout (adding/removing views with IDs) are reflected
+identically in the duplicated layout(s). Ideally, you wouldn&rsquo;t want layout changes to go unnoticed, especially when
+you&rsquo;re not actively working on the code (e.g., on vacation).</p><h4 id=solutions>Solutions
+<a class=heading-link href=#solutions><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h4><p>We can write a test that checks the <em>ids</em> and <em>view type</em> equality between original and copied layout, if there is any difference, the
+test will fail, and we will catch this problem before the users.</p><p>The first approach it came to my mind was to traverse both layout trees and then compare their ids to identify any discrepancies.
+If a difference is found, the test fails, alerting you to the inconsistency.</p><p>The second one (simpler), leverages the exception-throwing behavior of view binding itself. We can write an integration test that
+creates a Fragment scenario and launch a Fragment with a <em>view binding</em> bound to a layout source passed in as argument to the Fragment.</p><hr><h4 id=first-approach---breadth-first-search-bfs-for-layout-traversal>First approach - Breadth-First Search (BFS) for Layout Traversal
+<a class=heading-link href=#first-approach---breadth-first-search-bfs-for-layout-traversal><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h4><p>To achieve this, we&rsquo;ll leverage a Breadth-First Search (<a href=https://en.wikipedia.org/wiki/Breadth-first_search class=external-link target=_blank rel=noopener>BFS</a>) algorithm.
+This algorithm allows us to efficiently traverse the layout hierarchy, visiting all child nodes level by level.</p><p>First, we will create a dummy View, in which both view bindings (original and copied layouts) are inflated. This allows us to access the root view of each layout.</p><div class=highlight><pre tabindex=0 style=color:#c9d1d9;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-kotlin data-lang=kotlin><span style=display:flex><span><span style=color:#ff7b72>class</span> <span style=color:#f0883e;font-weight:700>DummyView</span> <span style=color:#d2a8ff;font-weight:700>@JvmOverloads</span> <span style=color:#ff7b72>constructor</span>(
+</span></span><span style=display:flex><span>    context: Context,
+</span></span><span style=display:flex><span>    attrs: AttributeSet? = <span style=color:#ff7b72>null</span>,
+</span></span><span style=display:flex><span>    defStyleAttr: Int = <span style=color:#a5d6ff>0</span>
+</span></span><span style=display:flex><span>) : LinearLayout(context, attrs, defStyleAttr) {
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#ff7b72>val</span> <span style=color:#79c0ff>binding</span> = <span style=color:#f0883e;font-weight:700>ExampleLayoutBinding</span>.inflate(<span style=color:#f0883e;font-weight:700>LayoutInflater</span>.from(context))
+</span></span><span style=display:flex><span>    <span style=color:#ff7b72>val</span> <span style=color:#79c0ff>copyBinding</span> = <span style=color:#f0883e;font-weight:700>CopyExampleLayoutBindingg</span>.inflate(<span style=color:#f0883e;font-weight:700>LayoutInflater</span>.from(context))
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><p>Now we&rsquo;ll define a function that will extract the assigned IDs from the layout tree. We need to visit all child
+node and its children nodes.</p><p>This could be an <em>expensive</em> operation, since it iterates through all child views of a ViewGroup,
+regardless of whether they belong to the source layout. This can lead to unnecessary processing, especially for complex layouts with many nested custom views. That&rsquo;s why we need to compare if a <code>child#sourceLayoutResId</code> is the same as the root view.</p><div class="notice warning"><div class=notice-title><i class="fa fa-exclamation-triangle" aria-hidden=true></i>Warning</div><div class=notice-content>For the sake of brevity, the following algorithm is intentionally incomplete. It does not take into account <code>&lt;merge></code> or <code>&lt;include></code> tags. It also does not store view type for further equality check between layouts.</div></div><div class=highlight><pre tabindex=0 style=color:#c9d1d9;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-kotlin data-lang=kotlin><span style=display:flex><span><span style=color:#ff7b72>fun</span> <span style=color:#d2a8ff;font-weight:700>getViewsId</span>(parent: View): Set&lt;String&gt; {
+</span></span><span style=display:flex><span>    <span style=color:#ff7b72>val</span> <span style=color:#79c0ff>viewsId</span> = mutableSetOf&lt;String&gt;()
+</span></span><span style=display:flex><span>    <span style=color:#ff7b72>val</span> <span style=color:#79c0ff>nodes</span> = LinkedList&lt;View&gt;().apply { <span style=color:#8b949e;font-style:italic>/*add the root view*/</span> add(parent) }
+</span></span><span style=display:flex><span>    <span style=color:#ff7b72>val</span> <span style=color:#79c0ff>parentSourceId</span> = parent.sourceLayoutResId <span style=color:#8b949e;font-style:italic>//resource ID of the source layout (parent)
+</span></span></span><span style=display:flex><span><span style=color:#8b949e;font-style:italic></span>
+</span></span><span style=display:flex><span>    <span style=color:#8b949e;font-style:italic>// Utility method to insert view id simple name 
+</span></span></span><span style=display:flex><span><span style=color:#8b949e;font-style:italic></span>    <span style=color:#8b949e;font-style:italic>// Performance is not a concern here
+</span></span></span><span style=display:flex><span><span style=color:#8b949e;font-style:italic></span>    <span style=color:#ff7b72>fun</span> <span style=color:#d2a8ff;font-weight:700>insert</span>(id: Int) {
+</span></span><span style=display:flex><span>        <span style=color:#8b949e;font-style:italic>// skip views that has no id declared
+</span></span></span><span style=display:flex><span><span style=color:#8b949e;font-style:italic></span>        <span style=color:#ff7b72>if</span> (id <span style=color:#ff7b72;font-weight:700>==</span> NO_ID) <span style=color:#ff7b72>return</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        <span style=color:#8b949e;font-style:italic>// return buttonId instead of com.example.binding.test:id/buttonId
+</span></span></span><span style=display:flex><span><span style=color:#8b949e;font-style:italic></span>        <span style=color:#8b949e;font-style:italic>// not handling exception on purpose
+</span></span></span><span style=display:flex><span><span style=color:#8b949e;font-style:italic></span>        <span style=color:#ff7b72>val</span> <span style=color:#79c0ff>idSimpleName</span> = parent.resources.getResourceName(id).substringAfterLast(<span style=color:#a5d6ff>&#34;/&#34;</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        viewsId.add(idSimpleName)
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#ff7b72>while</span> (nodes.isNotEmpty()) {
+</span></span><span style=display:flex><span>        <span style=color:#ff7b72>val</span> <span style=color:#79c0ff>child</span>: View = nodes.removeFirst()
+</span></span><span style=display:flex><span>        <span style=color:#ff7b72>val</span> <span style=color:#79c0ff>childSourceId</span> = child.sourceLayoutResId
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        <span style=color:#8b949e;font-style:italic>// view can only have children if it&#39;s a ViewGroup
+</span></span></span><span style=display:flex><span><span style=color:#8b949e;font-style:italic></span>        <span style=color:#ff7b72>if</span> (child <span style=color:#ff7b72;font-weight:700>!is</span> ViewGroup <span style=color:#ff7b72;font-weight:700>||</span> child.childCount <span style=color:#ff7b72;font-weight:700>==</span> <span style=color:#a5d6ff>0</span>) {
+</span></span><span style=display:flex><span>            <span style=color:#ff7b72>if</span> (childSourceId <span style=color:#ff7b72;font-weight:700>==</span> parentSourceId)
+</span></span><span style=display:flex><span>                insert(child.id)
+</span></span><span style=display:flex><span>            <span style=color:#ff7b72>continue</span>
+</span></span><span style=display:flex><span>        }
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        <span style=color:#8b949e;font-style:italic>// add child&#39;s children to be visited later
+</span></span></span><span style=display:flex><span><span style=color:#8b949e;font-style:italic></span>        child.children.forEach { v <span style=color:#ff7b72;font-weight:700>-&gt;</span>
+</span></span><span style=display:flex><span>            <span style=color:#ff7b72>if</span> (childSourceId <span style=color:#ff7b72;font-weight:700>==</span> parentSourceId) {
+</span></span><span style=display:flex><span>                insert(child.id)
+</span></span><span style=display:flex><span>            }
+</span></span><span style=display:flex><span>            nodes.add(v)
+</span></span><span style=display:flex><span>        }
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#ff7b72>return</span> viewsId
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><p>Now, we need to write a test that assert the equality of the ids between original and copy bindings.</p><div class=highlight><pre tabindex=0 style=color:#c9d1d9;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-kotlin data-lang=kotlin><span style=display:flex><span><span style=color:#d2a8ff;font-weight:700>@RunWith</span>(RobolectricTestRunner<span style=color:#ff7b72;font-weight:700>::</span><span style=color:#ff7b72>class</span>)
+</span></span><span style=display:flex><span><span style=color:#ff7b72>class</span> <span style=color:#f0883e;font-weight:700>ExampleLayoutBindingTest</span> {
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#d2a8ff;font-weight:700>@Test</span>
+</span></span><span style=display:flex><span>    <span style=color:#ff7b72>fun</span> <span style=color:#d2a8ff;font-weight:700>`test id equality between original and copy bindings`</span>() {
+</span></span><span style=display:flex><span>        <span style=color:#ff7b72>val</span> <span style=color:#79c0ff>v</span> = DummyView(<span style=color:#f0883e;font-weight:700>InstrumentationRegistry</span>.getInstrumentation().context)
+</span></span><span style=display:flex><span>        <span style=color:#ff7b72>val</span> <span style=color:#79c0ff>originalIds</span> = getViewsId(v.binding.root)
+</span></span><span style=display:flex><span>        <span style=color:#ff7b72>val</span> <span style=color:#79c0ff>copyIds</span> = getViewsId(v.copyBinding.root)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        <span style=color:#ff7b72>val</span> <span style=color:#79c0ff>diffOriginal</span> = originalIds.minus(copyIds)
+</span></span><span style=display:flex><span>        <span style=color:#ff7b72>val</span> <span style=color:#79c0ff>diffExperimental</span> = copyIds.minus(originalIds)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        assertEquals(diffOriginal, diffExperimental)
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><p>As soon as we delete, let say, <code>myButton</code> from the <code>example_layout</code>, this test will fail with the following
+message <code>java.lang.AssertionError: expected:&lt;[]> but was:&lt;[myButton]></code>. While the default assertion message might not be
+very informative, you can create a custom assertion function to provide a clearer error message. Additionally, you can
+expand the test to compare not only IDs but also view types for a more comprehensive check.</p><hr><h4 id=second-approach---let-view-binding-do-the-heavy-lifting>Second approach - Let view binding do the heavy lifting
+<a class=heading-link href=#second-approach---let-view-binding-do-the-heavy-lifting><i class="fa fa-link" aria-hidden=true title="Link to heading"></i>
+<span class=sr-only>Link to heading</span></a></h4><p>For this approach, you&rsquo;ll need the following additional dependencies:</p><blockquote><ul><li><code>fragment-testing-manifest</code> and <code>fragment-testing</code> <a href=https://developer.android.com/guide/fragments/test class=external-link target=_blank rel=noopener>source</a></li><li><code>robolectric</code> <a href=https://github.com/robolectric/robolectric class=external-link target=_blank rel=noopener>source</a></li></ul></blockquote><p>For this approach, the work is very minimal since we are relying on the exception-throwing behavior of view binding.
+First, we create a dummy Fragment, in which we are binding the <code>ExampleLayoutBinding</code> to Fragment&rsquo;s view. We can pass different layout
+resources to Fragment&rsquo;s constructor to simulate the real scenario.</p><div class=highlight><pre tabindex=0 style=color:#c9d1d9;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-kotlin data-lang=kotlin><span style=display:flex><span><span style=color:#ff7b72>class</span> <span style=color:#f0883e;font-weight:700>DummyFragment</span>(<span style=color:#d2a8ff;font-weight:700>@LayoutRes</span> contentLayoutId: Int) : Fragment(contentLayoutId) {
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#ff7b72>override</span> <span style=color:#ff7b72>fun</span> <span style=color:#d2a8ff;font-weight:700>onViewCreated</span>(view: View, savedInstanceState: Bundle?) {
+</span></span><span style=display:flex><span>        <span style=color:#ff7b72>super</span>.onViewCreated(view, savedInstanceState)
+</span></span><span style=display:flex><span>        <span style=color:#f0883e;font-weight:700>ExampleLayoutBinding</span>.bind(view)
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#d2a8ff;font-weight:700>@RunWith</span>(RobolectricTestRunner<span style=color:#ff7b72;font-weight:700>::</span><span style=color:#ff7b72>class</span>)
+</span></span><span style=display:flex><span><span style=color:#ff7b72>class</span> <span style=color:#f0883e;font-weight:700>ExampleLayoutBindingTest</span> {
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    <span style=color:#d2a8ff;font-weight:700>@Test</span>
+</span></span><span style=display:flex><span>    <span style=color:#ff7b72>fun</span> <span style=color:#d2a8ff;font-weight:700>testViewInflation</span>() {
+</span></span><span style=display:flex><span>        launchFragment {
+</span></span><span style=display:flex><span>            <span style=color:#ff7b72>val</span> <span style=color:#79c0ff>res</span> = <span style=color:#f0883e;font-weight:700>R</span>.layout.example_layout <span style=color:#8b949e;font-style:italic>// it could be also copy_example_layout
+</span></span></span><span style=display:flex><span><span style=color:#8b949e;font-style:italic></span>            DummyFragment(res)
+</span></span><span style=display:flex><span>        }
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><p>We can also avoid using the <code>fragment scenario</code> altogether and only rely on View inflation.</p><div class=highlight><pre tabindex=0 style=color:#c9d1d9;background-color:#0d1117;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-kotlin data-lang=kotlin><span style=display:flex><span><span style=color:#ff7b72>class</span> <span style=color:#f0883e;font-weight:700>DummyView</span> <span style=color:#d2a8ff;font-weight:700>@JvmOverloads</span> <span style=color:#ff7b72>constructor</span>(
+</span></span><span style=display:flex><span>    context: Context,
+</span></span><span style=display:flex><span>    attrs: AttributeSet? = <span style=color:#ff7b72>null</span>,
+</span></span><span style=display:flex><span>    defStyleAttr: Int = <span style=color:#a5d6ff>0</span>
+</span></span><span style=display:flex><span>) : LinearLayout(context, attrs, defStyleAttr) {
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#8b949e;font-style:italic>// do the same in another view that inflates CopyExampleLayoutBinding and binds ExampleLayoutBinding
+</span></span></span><span style=display:flex><span><span style=color:#8b949e;font-style:italic></span>    <span style=color:#ff7b72>private</span> <span style=color:#ff7b72>val</span> <span style=color:#79c0ff>binding</span> = <span style=color:#f0883e;font-weight:700>ExampleLayoutBinding</span>.inflate(<span style=color:#f0883e;font-weight:700>LayoutInflater</span>.from(context), <span style=color:#ff7b72>this</span>, <span style=color:#ff7b72>true</span>)
+</span></span><span style=display:flex><span>    <span style=color:#ff7b72>private</span> <span style=color:#ff7b72>val</span> <span style=color:#79c0ff>copyBinding</span> = <span style=color:#f0883e;font-weight:700>CopyExampleLayoutBinding</span>.bind(binding.root)
+</span></span><span style=display:flex><span>}
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#d2a8ff;font-weight:700>@RunWith</span>(RobolectricTestRunner<span style=color:#ff7b72;font-weight:700>::</span><span style=color:#ff7b72>class</span>)
+</span></span><span style=display:flex><span><span style=color:#ff7b72>class</span> <span style=color:#f0883e;font-weight:700>ExampleLayoutBindingTest</span> {
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    <span style=color:#d2a8ff;font-weight:700>@Test</span>
+</span></span><span style=display:flex><span>    <span style=color:#ff7b72>fun</span> <span style=color:#d2a8ff;font-weight:700>testViewInflation</span>() {
+</span></span><span style=display:flex><span>        DummyView(<span style=color:#f0883e;font-weight:700>InstrumentationRegistry</span>.getInstrumentation().context)
+</span></span><span style=display:flex><span>    }
+</span></span><span style=display:flex><span>}
+</span></span></code></pre></div><p>When this test runs, the view binding itself checks that the resource used to create a view and the <code>ExampleLayoutBinding</code> have the same Views with the same id.
+In case there isn&rsquo;t a match, the test will fail with this message: <code>Missing required view with ID: com.example.binding:id/myButton</code>.</p><p>This test also cover the (im)possibility to have the same id for two different View, e.g. Button with id <code>button</code> in the <code>example_layout</code> layout and a Text with the same id in the <code>copy_example_layout</code> layout. If this happens, the test will fail and the message will be something like <code>TextView cannot be cast to class Button</code>.</p><p>However, it&rsquo;s possible to have different view types between different layout configurations sharing the same id. For that, you have to tell the compiler what type to use in the generated binding class using <code>tools:viewBindingType="YourViewType"</code>. More about the hints in the <a href=https://developer.android.com/topic/libraries/view-binding#viewbindingtype class=external-link target=_blank rel=noopener>official doc</a>.</p><hr><p>That&rsquo;s it, now we can catch the exception earlier and not be surprised in production with a crash. The first approach (traversing the View tree) has its limitation since we are one step behind trying to catch up with built-in behavior of view binding; the second one (using Fragment scenario) is more reliable since we are using the view binding&rsquo;s machinery in the test.</p><p><strong>Note:</strong> You can also write an AndroidTest that launches a real Fragment on an emulator to get an even more realistic test scenario, but this approach might be slower than an integration test without the emulator.</p></div><footer></footer></article></section></div><footer class=footer><section class=container>©
+2024
+Bruno Hensel
+·
+Powered by <a href=https://gohugo.io/ target=_blank rel=noopener>Hugo</a> & <a href=https://github.com/luizdepra/hugo-coder/ target=_blank rel=noopener>Coder</a>.</section></footer></main><script src=/js/coder.min.6ae284be93d2d19dad1f02b0039508d9aab3180a12a06dcc71b0b0ef7825a317.js integrity="sha256-auKEvpPS0Z2tHwKwA5UI2aqzGAoSoG3McbCw73gloxc="></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-ED4JJJVD8G"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag("js",new Date),gtag("config","G-ED4JJJVD8G")</script></body></html>
